@@ -91,14 +91,14 @@ class RegionFileRecompressor
       if compression == 2 && !compressing
         decompressed_data = Zlib::Inflate.inflate(encoded_data)
         new_length = decompressed_data.length
-        new_sectors = (new_length.to_f / 4096).ceil.to_i
+        new_sectors = ((new_length + 5).to_f / 4096).ceil.to_i
         new_chunk_header = [new_length, 0].pack("Nc")
         
         new_chunk = pad_to_sector(new_chunk_header + decompressed_data)
       elsif compression == 0 && compressing
         recompressed_data = Zlib::Deflate.deflate(encoded_data)
         new_length = recompressed_data.length
-        new_sectors = (new_length.to_f / 4096).ceil.to_i
+        new_sectors = ((new_length + 5).to_f / 4096).ceil.to_i
         new_chunk_header = [new_length, 2].pack("Nc")
         
         new_chunk = pad_to_sector(new_chunk_header + recompressed_data)
