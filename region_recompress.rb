@@ -120,6 +120,8 @@ class RegionFileRecompressor
   end
   
   def create_archive(archive, files)
+    num_files = 0
+    total_input_size = 0
     Bzip2::Writer.open(archive) do |arfile|
       ar = SimpleMultiFileWriter.new(arfile)
       files.each do |in_file|
@@ -130,12 +132,19 @@ class RegionFileRecompressor
         File.open(in_file, 'rb') do |infile|
           data = infile.read
         end
+        total_input_size += data.bytesize
         
         out_data = process(data, compressing)
         
         ar.write_file(out_file, out_data)
+        
+        num_files += 1
       end
     end
+    output_size = File.size(archive)
+    STDERR.puts "Compressed #{num_files} region files"
+    STDERR.puts "Input #{total_input_size} bytes, output #{output_size} bytes"
+    STDERR.puts("Compression ratio %0.1f:1" % (total_input_size.to_f / output_size.to_f))
   end
   
   def extract_archive(archive)
