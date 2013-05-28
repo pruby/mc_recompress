@@ -14,11 +14,8 @@
 # common patterns between the chunks. This script immediately concatenates them together in to
 # a bzip2 compressed archive, to make the most of the data in common between all the chunks.
 # 
-# Usage: ruby region_recompress.rb -a input1.mca [input2.mca ...]
-# 
-# The output files have a ".dec" suffix added to the end. To recreate valid MCA files:
-# 
-# Usage: ruby region_recompress.rb input1.mca.dec [input2.mca.dec ...]
+# Usage: ruby region_recompress.rb -a my.archive input1.mca [input2.mca ...]
+#        ruby region_recompress.rb -d my.archive
 # 
 # This also removes any dead space between stored chunks in a region file.
 
