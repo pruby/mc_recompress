@@ -9,15 +9,20 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import org.jnbt.CompoundTag;
+import org.jnbt.NBTInputStream;
+import org.jnbt.Tag;
 import org.junit.Rule;
 import org.junit.Test;
 
 
 public class RecompressTests {
-	
 	@Test
 	public void testParseMCA() throws IOException {
 		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
@@ -59,7 +64,7 @@ public class RecompressTests {
 	}
 	
 	@Test
-	public void testWriteArchive() throws IOException {
+	public void testConvertToValidNBT() throws IOException {
 		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
     	FileChannel inChan = testFile.getChannel();
     	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
@@ -68,14 +73,33 @@ public class RecompressTests {
     	RegionFile region = RegionFile.parse(buf.array());
     	
     	File tempFile = File.createTempFile("test", ".mci.gz");
-    	//tempFile.deleteOnExit();
+    	tempFile.deleteOnExit();
     	region.writeArchive(tempFile);
+    	
+    	byte[] fileData = Files.readAllBytes(tempFile.toPath());
+    	NBTInputStream reparser = new NBTInputStream(new ByteArrayInputStream(fileData));
+    	Tag root = reparser.readTag();
+
+    	assertEquals("Region", root.getName());
+    	assertEquals("1.0", ((CompoundTag) root).getValue().get("MCI Version").getValue());
 	}
 	
 	@Test
 	public void testTranscribeAssets() throws IOException {
-		MCAConverter converter = new MCAConverter("./assets");
+    	Path tempDir = Files.createTempDirectory("temp_mca");
+    	
+    	Path assetPath = FileSystems.getDefault().getPath("assets/test.mca");
+    	Files.copy(assetPath, tempDir.resolve("test.mca"));
+    	
+		MCAConverter converter = new MCAConverter(tempDir);
 		converter.convertMCAFiles();
-	}
 
+		// File should have been converted and original deleted
+		assertTrue(Files.exists(tempDir.resolve("test.mci.gz")));
+		assertFalse(Files.exists(tempDir.resolve("test.mca")));
+		
+		// Clean up
+		Files.deleteIfExists(tempDir.resolve("test.mci.gz"));
+		Files.delete(tempDir);
+	}
 }

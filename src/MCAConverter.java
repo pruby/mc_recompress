@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.CopyOption;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -12,14 +13,14 @@ import java.util.List;
 
 
 public class MCAConverter extends SimpleFileVisitor<Path> {
-	private String directory;
+	private Path directory;
 	
-	public MCAConverter(String directory) {
-		this.directory = directory;
+	public MCAConverter(Path tempDir) {
+		this.directory = tempDir;
 	}
 
 	public void convertMCAFiles() throws IOException {
-		Files.walkFileTree(FileSystems.getDefault().getPath(directory), this);
+		Files.walkFileTree(directory, this);
 	}
 
     @Override
@@ -31,8 +32,14 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	RegionFile region = RegionFile.parse(fileData);
 	        	
 	        	File tempFile = File.createTempFile("test", ".mci.gz");
-	        	tempFile.deleteOnExit();
 	        	region.writeArchive(tempFile);
+	        	
+	        	String newFileName = file.getFileName().toString().replace(".mca", ".mci.gz");
+	        	Path newPath = file.resolveSibling(newFileName);
+	        	
+	        	Files.deleteIfExists(newPath);
+	        	Files.move(tempFile.toPath(), newPath);
+	        	Files.delete(file);
 	        }
     	} catch (IOException e) {
     		e.printStackTrace();
