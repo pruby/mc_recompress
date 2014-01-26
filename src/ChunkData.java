@@ -135,6 +135,7 @@ public class ChunkData {
 		CompoundTag levelTag = (CompoundTag) chunkRootTag.getValue().get("Level");
 		Map<String, Tag> chunkFields = new HashMap<String, Tag>(levelTag.getValue());
 		Tag origSectionTag = chunkFields.remove("Sections");
+		
 		List<Tag> sections = new ArrayList<Tag>();
 		
 		for (int i = 0; i < 16; ++i) {
@@ -144,6 +145,8 @@ public class ChunkData {
 			}
 		}
 		
-		return new ListTag(origSectionTag.getName(), CompoundTag.class, sections);
+		chunkFields.put("Sections", new ListTag(origSectionTag.getName(), CompoundTag.class, sections));
+		
+		return new CompoundTag(chunkRootTag.getName(), chunkFields);
 	}
 }
