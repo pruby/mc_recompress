@@ -68,8 +68,14 @@ public class RecompressTests {
     	RegionFile region = RegionFile.parse(buf.array());
     	
     	File tempFile = File.createTempFile("test", ".mci.gz");
-    	tempFile.deleteOnExit();
+    	//tempFile.deleteOnExit();
     	region.writeArchive(tempFile);
+	}
+	
+	@Test
+	public void testTranscribeAssets() throws IOException {
+		MCAConverter converter = new MCAConverter("./assets");
+		converter.convertMCAFiles();
 	}
 
 }
