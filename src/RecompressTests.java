@@ -34,7 +34,42 @@ public class RecompressTests {
     			}
     		}
     	}
+    	// Ruby code used to check - 349 chunks in the test.mca region file
     	assertEquals(349, chunkCount);
+	}
+	
+	@Test
+	public void testReadChunks() throws IOException {
+		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
+    	FileChannel inChan = testFile.getChannel();
+    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
+    	inChan.read(buf);
+    	buf.flip();
+    	RegionFile region = RegionFile.parse(buf.array());
+    	
+    	ChunkData testChunk = region.getChunk(16, 27); 
+    	assertNotNull(testChunk);
+    	SectionData bedrock = testChunk.getSection(0);
+    	assertNotNull(bedrock);
+    	byte[] blocks = bedrock.getBlocks();
+    	assertNotNull(blocks);
+    	
+    	// Check for bedrock ID
+    	assertEquals(7, blocks[0]);
+	}
+	
+	@Test
+	public void testWriteArchive() throws IOException {
+		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
+    	FileChannel inChan = testFile.getChannel();
+    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
+    	inChan.read(buf);
+    	buf.flip();
+    	RegionFile region = RegionFile.parse(buf.array());
+    	
+    	File tempFile = File.createTempFile("test", ".mci.gz");
+    	tempFile.deleteOnExit();
+    	region.writeArchive(tempFile);
 	}
 
 }
