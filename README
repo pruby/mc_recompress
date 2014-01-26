@@ -1,0 +1,32 @@
+Minecraft Recompressor
+======================
+
+Licence
+-------
+
+    Copyright (C) 2014 Timothy Goddard
+
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Purpose
+-------
+
+Minecraft recompressor scans a directory for Minecraft Anvil Region (.mca) files and converts them in to a more compressible form. For various good reasons, .mca files aren't as small as they could be:
+
+* They already compress each individual chunk within the file, of which there can be up to 1024. As a general rule, compressing 1024 similar streams together once is much better than compressing them individually.
+* Large blocks of data are contained within each section. Data with the same interpretation (light levels, material IDs, etc) is scattered through the chunk.
+* They may contain dead, unused space to pad chunks to 4096-byte boundaries.
+* They include cached computed data - height maps, light levels.
+
+All of these are necessary to simplify use in real-time within Minecraft, but add to the space these files take up. This utility compresses .mca files to its own format, .mci.gz . This format:
+
+* Is a single gzip-compressed NBT file, like many other Minecraft formats.
+* Contains all the same data as the .mca .
+* Extracts a set of block data fields (Blocks, Add, Data, BlockLight, SkyLight) and groups them together so that the same type of data is together inside the compressed file.
+
+This is a form of lossy compression, as it re-compresses the .mca file differently. It will, however, contain the same data at the moment. In future options to remove reproducible data such as lighting calculations may be provided.
