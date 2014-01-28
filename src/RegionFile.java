@@ -62,7 +62,7 @@ public class RegionFile {
 	
 	public Tag makeArchive() {
 		Map<String, Tag> rootNodes = new HashMap<String, Tag>();
-		rootNodes.put("MCI Version", new StringTag("MCI Version", "1.0"));
+		rootNodes.put("MRI Version", new StringTag("MRI Version", "1.0"));
 
 		// Output streams
 		Map<String, OutputStream> combinedStreams = new HashMap<String, OutputStream>();

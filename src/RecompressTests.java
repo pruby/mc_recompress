@@ -81,7 +81,7 @@ public class RecompressTests {
     	Tag root = reparser.readTag();
 
     	assertEquals("Region", root.getName());
-    	assertEquals("1.0", ((CompoundTag) root).getValue().get("MCI Version").getValue());
+    	assertEquals("1.0", ((CompoundTag) root).getValue().get("MRI Version").getValue());
 	}
 	
 	@Test
@@ -95,11 +95,11 @@ public class RecompressTests {
 		converter.convertMCAFiles();
 
 		// File should have been converted and original deleted
-		assertTrue(Files.exists(tempDir.resolve("test.mci.gz")));
+		assertTrue(Files.exists(tempDir.resolve("test.mri.gz")));
 		assertFalse(Files.exists(tempDir.resolve("test.mca")));
 		
 		// Clean up
-		Files.deleteIfExists(tempDir.resolve("test.mci.gz"));
+		Files.deleteIfExists(tempDir.resolve("test.mri.gz"));
 		Files.delete(tempDir);
 	}
 }

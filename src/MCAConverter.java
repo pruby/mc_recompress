@@ -31,10 +31,10 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	byte[] fileData = Files.readAllBytes(file);
 	        	RegionFile region = RegionFile.parse(fileData);
 	        	
-	        	File tempFile = File.createTempFile("test", ".mci.gz");
+	        	File tempFile = File.createTempFile("conversion", ".mri.t", file.getParent().toFile());
 	        	region.writeArchive(tempFile);
 	        	
-	        	String newFileName = file.getFileName().toString().replace(".mca", ".mci.gz");
+	        	String newFileName = file.getFileName().toString().replace(".mca", ".mri.gz");
 	        	Path newPath = file.resolveSibling(newFileName);
 	        	
 	        	Files.deleteIfExists(newPath);
