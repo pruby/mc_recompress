@@ -1,3 +1,4 @@
+package nz.net.goddard.mcrecompress;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +35,7 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	File tempFile = File.createTempFile("conversion", ".mri.t", file.getParent().toFile());
 	        	region.writeArchive(tempFile);
 	        	
-	        	String newFileName = file.getFileName().toString().replace(".mca", ".mri.gz");
+	        	String newFileName = file.getFileName().toString().replace(".mca", ".mri.bz2");
 	        	Path newPath = file.resolveSibling(newFileName);
 	        	
 	        	Files.deleteIfExists(newPath);

@@ -1,3 +1,4 @@
+package nz.net.goddard.mcrecompress;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

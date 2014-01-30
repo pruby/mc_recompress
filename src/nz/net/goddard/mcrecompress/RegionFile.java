@@ -1,3 +1,4 @@
+package nz.net.goddard.mcrecompress;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -7,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,10 +18,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.itadaki.bzip2.BZip2InputStream;
+import org.itadaki.bzip2.BZip2OutputStream;
 import org.jnbt.ByteArrayTag;
 import org.jnbt.CompoundTag;
 import org.jnbt.IntTag;
 import org.jnbt.ListTag;
+import org.jnbt.NBTInputStream;
 import org.jnbt.NBTOutputStream;
 import org.jnbt.StringTag;
 import org.jnbt.Tag;
@@ -190,10 +195,26 @@ public class RegionFile {
 	}
 	
 	public void writeArchive(File file) throws IOException {
-		FileOutputStream fileOut = new FileOutputStream(file);
-		NBTOutputStream nbtOut = new NBTOutputStream(fileOut);
+		OutputStream fileOut = new FileOutputStream(file);
+		if (file.toString().endsWith(".bz2")) {
+			fileOut = new BZip2OutputStream(fileOut);
+		}
+		NBTOutputStream nbtOut = new NBTOutputStream(fileOut, file.toString().endsWith(".gz"));
 		nbtOut.writeTag(makeArchive());
 		nbtOut.close();
+	}
+	
+	public static RegionFile readArchive(File file) throws IOException {
+    	byte[] fileData = Files.readAllBytes(file.toPath());
+    	NBTInputStream reparser;
+    	if (file.toString().endsWith(".bz2")) {
+    		reparser = new NBTInputStream(new BZip2InputStream(new ByteArrayInputStream(fileData), false), false);
+    	} else {
+    		reparser = new NBTInputStream(new ByteArrayInputStream(fileData), file.toString().endsWith(".gz"));
+    	}
+    	Tag root = reparser.readTag();
+    	RegionFile region = RegionFile.fromArchive(root);
+    	return region;
 	}
 
 	public void writeRegionFile(File tempFile) {

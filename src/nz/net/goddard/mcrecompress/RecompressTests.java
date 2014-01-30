@@ -1,3 +1,4 @@
+package nz.net.goddard.mcrecompress;
 import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
@@ -16,6 +17,7 @@ import java.util.Random;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import org.itadaki.bzip2.BZip2InputStream;
 import org.jnbt.CompoundTag;
 import org.jnbt.NBTInputStream;
 import org.jnbt.Tag;
@@ -74,8 +76,8 @@ public class RecompressTests {
     	buf.flip();
     	RegionFile region = RegionFile.parse(buf.array());
     	
-    	// Read test_converted.mci.gz - should read to the same data
-		File archiveFile = new File("./assets/test_converted.mci.gz");
+    	// Read test_converted.mri.gz - should read to the same data
+		File archiveFile = new File("./assets/test_converted.mri.gz");
 		byte[] fileData = Files.readAllBytes(archiveFile.toPath());
     	NBTInputStream reparser = new NBTInputStream(new ByteArrayInputStream(fileData));
     	Tag root = reparser.readTag();
@@ -89,6 +91,23 @@ public class RecompressTests {
 	}
 	
 	@Test
+	public void testRegenerateBZ2RegionFile() throws IOException {
+		// Read test.mca as master copy
+		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
+    	FileChannel inChan = testFile.getChannel();
+    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
+    	inChan.read(buf);
+    	buf.flip();
+    	RegionFile region = RegionFile.parse(buf.array());
+    	
+    	// Read test_converted.mri.gz - should read to the same data
+		File archiveFile = new File("./assets/test_converted.mri.bz2");
+    	RegionFile reregion = RegionFile.readArchive(archiveFile);
+    	
+    	compareRegions(region, reregion);
+	}
+	
+	@Test
 	public void testConvertReadBack() throws IOException {
 		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
     	FileChannel inChan = testFile.getChannel();
@@ -97,12 +116,11 @@ public class RecompressTests {
     	buf.flip();
     	RegionFile region = RegionFile.parse(buf.array());
     	
-    	File tempFile = File.createTempFile("test", ".mci.gz");
-    	tempFile.deleteOnExit();
+    	File tempFile = File.createTempFile("test", ".mri.bz2");
     	region.writeArchive(tempFile);
     	
     	byte[] fileData = Files.readAllBytes(tempFile.toPath());
-    	NBTInputStream reparser = new NBTInputStream(new ByteArrayInputStream(fileData));
+    	NBTInputStream reparser = new NBTInputStream(new BZip2InputStream(new ByteArrayInputStream(fileData), false), false);
     	Tag root = reparser.readTag();
 
     	assertEquals("Region", root.getName());
@@ -126,11 +144,11 @@ public class RecompressTests {
 		converter.convertMCAFiles();
 
 		// File should have been converted and original deleted
-		assertTrue(Files.exists(tempDir.resolve("test.mri.gz")));
+		assertTrue(Files.exists(tempDir.resolve("test.mri.bz2")));
 		assertFalse(Files.exists(tempDir.resolve("test.mca")));
 		
 		// Clean up
-		Files.deleteIfExists(tempDir.resolve("test.mri.gz"));
+		Files.deleteIfExists(tempDir.resolve("test.mri.bz2"));
 		Files.delete(tempDir);
 	}
 	
