@@ -28,12 +28,8 @@ import org.junit.Test;
 public class RecompressTests {
 	@Test
 	public void testParseMCA() throws IOException {
-		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
-    	FileChannel inChan = testFile.getChannel();
-    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
-    	inChan.read(buf);
-    	buf.flip();
-    	RegionFile region = RegionFile.parse(buf.array());
+    	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
+    	
     	int chunkCount = 0;
     	for (int x = 0; x < 32; x++) {
     		for (int z = 0; z < 32; z++) {
@@ -48,12 +44,7 @@ public class RecompressTests {
 	
 	@Test
 	public void testReadChunks() throws IOException {
-		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
-    	FileChannel inChan = testFile.getChannel();
-    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
-    	inChan.read(buf);
-    	buf.flip();
-    	RegionFile region = RegionFile.parse(buf.array());
+    	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
     	ChunkData testChunk = region.getChunk(16, 27); 
     	assertNotNull(testChunk);
@@ -69,12 +60,7 @@ public class RecompressTests {
 	@Test
 	public void testRegenerateRegionFile() throws IOException {
 		// Read test.mca as master copy
-		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
-    	FileChannel inChan = testFile.getChannel();
-    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
-    	inChan.read(buf);
-    	buf.flip();
-    	RegionFile region = RegionFile.parse(buf.array());
+    	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
     	// Read test_converted.mri.gz - should read to the same data
 		File archiveFile = new File("./assets/test_converted.mri.gz");
@@ -93,12 +79,7 @@ public class RecompressTests {
 	@Test
 	public void testRegenerateBZ2RegionFile() throws IOException {
 		// Read test.mca as master copy
-		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
-    	FileChannel inChan = testFile.getChannel();
-    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
-    	inChan.read(buf);
-    	buf.flip();
-    	RegionFile region = RegionFile.parse(buf.array());
+    	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
     	// Read test_converted.mri.gz - should read to the same data
 		File archiveFile = new File("./assets/test_converted.mri.bz2");
@@ -109,12 +90,7 @@ public class RecompressTests {
 	
 	@Test
 	public void testConvertReadBack() throws IOException {
-		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
-    	FileChannel inChan = testFile.getChannel();
-    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
-    	inChan.read(buf);
-    	buf.flip();
-    	RegionFile region = RegionFile.parse(buf.array());
+    	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
     	File tempFile = File.createTempFile("test", ".mri.bz2");
     	region.writeArchive(tempFile);
@@ -128,7 +104,7 @@ public class RecompressTests {
 
     	RegionFile reregion = RegionFile.fromArchive(root);
     	// Reload original region
-    	region = RegionFile.parse(buf.array());
+    	region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
     	compareRegions(region, reregion);
 	}
@@ -146,9 +122,22 @@ public class RecompressTests {
 		// File should have been converted and original deleted
 		assertTrue(Files.exists(tempDir.resolve("test.mri.bz2")));
 		assertFalse(Files.exists(tempDir.resolve("test.mca")));
+    	
+		MCARegenerator regen = new MCARegenerator(tempDir);
+		regen.regenerateMCAFiles();
+
+		// File should have been converted and original deleted
+		assertFalse(Files.exists(tempDir.resolve("test.mri.bz2")));
+		assertTrue(Files.exists(tempDir.resolve("test.mca")));
+		
+		// Load test region
+    	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
+    	RegionFile reregion = RegionFile.readMCA(tempDir.resolve("test.mca").toFile());
+    	
+    	compareRegions(region, reregion);
 		
 		// Clean up
-		Files.deleteIfExists(tempDir.resolve("test.mri.bz2"));
+		Files.deleteIfExists(tempDir.resolve("test.mca"));
 		Files.delete(tempDir);
 	}
 	

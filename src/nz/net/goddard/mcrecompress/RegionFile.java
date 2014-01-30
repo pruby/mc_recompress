@@ -1,7 +1,9 @@
 package nz.net.goddard.mcrecompress;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,7 +62,7 @@ public class RegionFile {
 		return chunks[offset];
 	}
 	
-	public static RegionFile parse(byte[] data) {
+	public static RegionFile parse(byte[] data) throws IOException {
 		RegionFile region = new RegionFile();
 		
 		byte[] locationData = Arrays.copyOfRange(data, 0, 4096);
@@ -195,31 +197,55 @@ public class RegionFile {
 	}
 	
 	public void writeArchive(File file) throws IOException {
-		OutputStream fileOut = new FileOutputStream(file);
+		writeArchive(file, deduceCompression(file));
+	}
+	
+	private static ArchiveCompression deduceCompression(File file) {
 		if (file.toString().endsWith(".bz2")) {
+			return ArchiveCompression.BZIP2;
+		} else if (file.toString().endsWith(".gz")) {
+			return ArchiveCompression.GZIP;
+		} else {
+			return ArchiveCompression.NONE;
+		}
+	}
+
+	public void writeArchive(File file, ArchiveCompression compression) throws IOException {
+		OutputStream fileOut = new FileOutputStream(file);
+		if (compression == ArchiveCompression.BZIP2) {
 			fileOut = new BZip2OutputStream(fileOut);
 		}
-		NBTOutputStream nbtOut = new NBTOutputStream(fileOut, file.toString().endsWith(".gz"));
+		NBTOutputStream nbtOut = new NBTOutputStream(fileOut, compression == ArchiveCompression.GZIP);
 		nbtOut.writeTag(makeArchive());
 		nbtOut.close();
 	}
 	
 	public static RegionFile readArchive(File file) throws IOException {
+		return readArchive(file, deduceCompression(file));
+	}
+		
+	public static RegionFile readArchive(File file, ArchiveCompression compression) throws IOException {
     	byte[] fileData = Files.readAllBytes(file.toPath());
     	NBTInputStream reparser;
-    	if (file.toString().endsWith(".bz2")) {
+    	if (compression == ArchiveCompression.BZIP2) {
     		reparser = new NBTInputStream(new BZip2InputStream(new ByteArrayInputStream(fileData), false), false);
     	} else {
-    		reparser = new NBTInputStream(new ByteArrayInputStream(fileData), file.toString().endsWith(".gz"));
+    		reparser = new NBTInputStream(new ByteArrayInputStream(fileData), compression == ArchiveCompression.GZIP);
     	}
     	Tag root = reparser.readTag();
     	RegionFile region = RegionFile.fromArchive(root);
     	return region;
 	}
+	
+	public static RegionFile readMCA(File file) throws IOException {
+    	byte[] fileData = Files.readAllBytes(file.toPath());
+    	return RegionFile.parse(fileData);
+	}
 
-	public void writeRegionFile(File tempFile) {
+	public void writeRegionFile(File file) throws IOException {
 		byte[][] chunkDataBlocks = new byte[1024][];
 		int[] chunkOffsets = new int[1024];
+		int[] chunkPositionHeaders = new int[1024];
 		
 		for (int i = 0; i < 1024; ++i) {
 			if (chunks[i] != null) {
@@ -230,12 +256,62 @@ public class RegionFile {
 				}
 			}
 		}
-		
-		chunkOffsets[0] = 1;
-		for (int i = 1; i < 1024; ++i) {
-			int prevSize = chunkDataBlocks[i - 1].length + 5;
-			int prevChunks = (int) Math.ceil(((double) prevSize) / 4096.0);
-			chunkOffsets[i] = chunkOffsets[i-1] + prevChunks;
+
+		int position = 2;
+		for (int i = 0; i < 1024; ++i) {
+			
+			if (chunkDataBlocks[i] != null) {
+				int size = chunkDataBlocks[i].length + 5;
+				int chunks = (int) Math.ceil(((double) size) / 4096.0);
+				chunkOffsets[i] = position * 4096;
+				chunkPositionHeaders[i] = (position << 8) + (size & 255);
+				position += chunks;
+			} else {
+				chunkOffsets[i] = 0;
+			}
 		}
+		int finalLength = position * 4096;
+		
+		FileOutputStream fileOut = new FileOutputStream(file);
+		DataOutputStream out = new DataOutputStream(fileOut);
+		
+		// Chunk positions
+		for (int i = 0; i < 1024; ++i) {
+			out.writeInt(chunkPositionHeaders[i]);
+		}
+		
+		// Timestamps
+		for (int i = 0; i < 1024; ++i) {
+			if (chunks[i] != null) {
+				out.writeInt(chunks[i].getTimestamp());
+			} else {
+				out.writeInt(0);
+			}
+		}
+		
+		int outAmount = 1024 * 8;
+		// Chunk data
+		for (int i = 0; i < 1024; ++i) {
+			if (chunkDataBlocks[i] != null) {
+				if (outAmount < chunkOffsets[i]) {
+					// Pad to fit
+					byte[] padding = new byte[chunkOffsets[i] - outAmount];
+					out.write(padding);
+					outAmount += padding.length;
+				}
+				assert(outAmount == chunkOffsets[i]);
+				out.write(chunkDataBlocks[i]);
+				outAmount += chunkDataBlocks[i].length;
+			}
+		}
+		
+		if (outAmount < finalLength) {
+			// Pad to fit
+			byte[] padding = new byte[finalLength - outAmount];
+			out.write(padding);
+			outAmount += padding.length;
+		}
+		
+		out.close();
 	}
 }

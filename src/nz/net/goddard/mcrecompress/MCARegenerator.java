@@ -25,7 +25,7 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 		this.directory = tempDir;
 	}
 
-	public void convertMCAFiles() throws IOException {
+	public void regenerateMCAFiles() throws IOException {
 		Files.walkFileTree(directory, this);
 	}
 
@@ -33,21 +33,13 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
     public FileVisitResult visitFile(Path file,
             BasicFileAttributes attrs) {
     	try {
-	        if (file.toString().endsWith(".mri") || file.toString().endsWith(".mri.gz") || file.toString().endsWith(".mri.bz2")) {
-	        	byte[] fileData = Files.readAllBytes(file);
-	        	NBTInputStream reparser;
-	        	if (file.toString().endsWith(".bz2")) {
-	        		reparser = new NBTInputStream(new BZip2InputStream(new ByteArrayInputStream(fileData), false), false);
-	        	} else {
-	        		reparser = new NBTInputStream(new ByteArrayInputStream(fileData), file.toString().endsWith(".gz"));
-	        	}
-	        	Tag root = reparser.readTag();
-	        	RegionFile region = RegionFile.fromArchive(root);
+	        if (file.toString().endsWith(".mri") || file.toString().endsWith(".mri.bz2") || file.toString().endsWith(".mri.bz2")) {
+	        	RegionFile region = RegionFile.readArchive(file.toFile());
 	        	
 	        	File tempFile = File.createTempFile("conversion", ".mca.t", file.getParent().toFile());
 	        	region.writeRegionFile(tempFile);
 	        	
-	        	String newFileName = file.getFileName().toString().replace(".mri.gz", ".mca");
+	        	String newFileName = file.getFileName().toString().replaceAll("\\.mri(?:\\.gz|\\.bz2)?$", ".mca");
 	        	Path newPath = file.resolveSibling(newFileName);
 	        	
 	        	Files.deleteIfExists(newPath);

@@ -3,6 +3,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -59,11 +60,10 @@ public class ChunkData {
 		}
 	}
 
-	public static ChunkData parse(byte[] data, int location, int timestamp) {
+	public static ChunkData parse(byte[] data, int location, int timestamp) throws IOException {
 		NBTInputStream nbtInput;
 		ChunkData chunk = null;
 		
-		try {
 			int offset_sectors = location * 4096;
 			byte[] header = Arrays.copyOfRange(data, offset_sectors, offset_sectors + 5);
 			ByteBuffer headerStream = ByteBuffer.wrap(header);
@@ -85,10 +85,6 @@ public class ChunkData {
 			
 			nbtInput = new NBTInputStream(chunkReader, false);
 			chunk = new ChunkData(timestamp, nbtInput.readTag());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		return chunk;
 	}
@@ -182,18 +178,21 @@ public class ChunkData {
 		ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
 		DeflaterOutputStream deflateOut = new DeflaterOutputStream(bytesOut);
 		NBTOutputStream nbtOut = new NBTOutputStream(deflateOut);
-		nbtOut.writeTag(chunkRootTag);
+		nbtOut.writeTag(getChunkRootTag());
 		nbtOut.close();
+		deflateOut.close();
 		byte[] compressedData = bytesOut.toByteArray();
 		
 		// Prepend header
 		bytesOut = new ByteArrayOutputStream();
-		bytesOut.write((compressedData.length >> 24) & 255);
-		bytesOut.write((compressedData.length >> 16) & 255);
-		bytesOut.write((compressedData.length >> 8) & 255);
-		bytesOut.write(compressedData.length & 255);
-		bytesOut.write(1);
-		bytesOut.write(compressedData);
+		DataOutputStream dataOut = new DataOutputStream(bytesOut);
+		int sz = compressedData.length + 1;
+		
+		dataOut.writeInt(sz);
+		dataOut.writeByte(2);
+		dataOut.write(compressedData);
+		
+		dataOut.close();
 		return bytesOut.toByteArray();
 	}
 }

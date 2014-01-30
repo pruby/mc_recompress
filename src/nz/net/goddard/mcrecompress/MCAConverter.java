@@ -33,9 +33,9 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	RegionFile region = RegionFile.parse(fileData);
 	        	
 	        	File tempFile = File.createTempFile("conversion", ".mri.t", file.getParent().toFile());
-	        	region.writeArchive(tempFile);
-	        	
 	        	String newFileName = file.getFileName().toString().replace(".mca", ".mri.bz2");
+	        	region.writeArchive(tempFile, ArchiveCompression.BZIP2);
+	        	
 	        	Path newPath = file.resolveSibling(newFileName);
 	        	
 	        	Files.deleteIfExists(newPath);
