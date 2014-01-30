@@ -1,5 +1,6 @@
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -22,6 +24,7 @@ import org.jnbt.ByteTag;
 import org.jnbt.IntTag;
 import org.jnbt.ListTag;
 import org.jnbt.NBTInputStream;
+import org.jnbt.NBTOutputStream;
 import org.jnbt.Tag;
 
 
@@ -33,9 +36,13 @@ public class ChunkData {
 	public ChunkData(int timestamp, Tag chunkRootTag) {
 		this.setTimestamp(timestamp);
 		this.setChunkRootTag((CompoundTag) chunkRootTag);
-		extractSections();
 	}
 	
+	private void setChunkRootTag(CompoundTag chunkRootTag) {
+		this.chunkRootTag = chunkRootTag;
+		extractSections();
+	}
+
 	private void extractSections() {
 		this.sections = new HashMap<Integer, SectionData>();
 		try {
@@ -94,11 +101,26 @@ public class ChunkData {
 	}
 
 	public CompoundTag getChunkRootTag() {
-		return chunkRootTag;
-	}
-
-	public void setChunkRootTag(CompoundTag chunkRootTag) {
-		this.chunkRootTag = chunkRootTag;
+		CompoundTag levelTag = (CompoundTag) chunkRootTag.getValue().get("Level");
+		Map<String, Tag> chunkFields = new HashMap<String, Tag>(levelTag.getValue());
+		Tag origSectionTag = chunkFields.remove("Sections");
+		
+		List<Tag> sections = new ArrayList<Tag>();
+		
+		for (int i = 0; i < 16; ++i) {
+			SectionData section = getSection(i);
+			if (section != null) {
+				sections.add(section.getSectionTag());
+			}
+		}
+		
+		chunkFields.put("Sections", new ListTag(origSectionTag.getName(), CompoundTag.class, sections));
+		
+		levelTag = new CompoundTag(levelTag.getName(), chunkFields);
+		
+		Map<String, Tag> topFields = new HashMap<String, Tag>();
+		topFields.put("Level", levelTag);
+		return new CompoundTag(chunkRootTag.getName(), topFields);
 	}
 	
 	public int getX() {
@@ -141,13 +163,36 @@ public class ChunkData {
 		for (int i = 0; i < 16; ++i) {
 			SectionData section = getSection(i);
 			if (section != null) {
-				sections.add(new CompoundTag(section.getTagName(), section.getResidualFields()));
+				sections.add(new CompoundTag(section.getTagName(), section.getTagFields()));
 			}
 		}
 		
 		chunkFields.put("Sections", new ListTag(origSectionTag.getName(), CompoundTag.class, sections));
 		chunkFields.put("Last Modified", new IntTag("Last Modified", timestamp));
 		
-		return new CompoundTag(chunkRootTag.getName(), chunkFields);
+		levelTag = new CompoundTag(levelTag.getName(), chunkFields);
+		
+		Map<String, Tag> topFields = new HashMap<String, Tag>();
+		topFields.put("Level", levelTag);
+		return new CompoundTag(chunkRootTag.getName(), topFields);
+	}
+
+	public byte[] generateChunkBlock() throws IOException {
+		ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+		DeflaterOutputStream deflateOut = new DeflaterOutputStream(bytesOut);
+		NBTOutputStream nbtOut = new NBTOutputStream(deflateOut);
+		nbtOut.writeTag(chunkRootTag);
+		nbtOut.close();
+		byte[] compressedData = bytesOut.toByteArray();
+		
+		// Prepend header
+		bytesOut = new ByteArrayOutputStream();
+		bytesOut.write((compressedData.length >> 24) & 255);
+		bytesOut.write((compressedData.length >> 16) & 255);
+		bytesOut.write((compressedData.length >> 8) & 255);
+		bytesOut.write(compressedData.length & 255);
+		bytesOut.write(1);
+		bytesOut.write(compressedData);
+		return bytesOut.toByteArray();
 	}
 }

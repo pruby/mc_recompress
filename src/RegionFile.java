@@ -26,6 +26,20 @@ import org.jnbt.Tag;
 
 
 public class RegionFile {
+	private static final String[] combineKeys = {"Blocks", "Add", "Data", "BlockLight", "SkyLight"};
+	private static final Integer[] blockLengths = {4096, 2048, 2048, 2048, 2048};
+	public static Map<String, Integer> combineBlockLengths;
+	static {
+		combineBlockLengths = new HashMap<String, Integer>();
+		for (int i = 0; i < combineKeys.length; i++) {
+			String key = combineKeys[i];
+			Integer blockLength = blockLengths[i];
+			
+			combineBlockLengths.put(key, blockLength);
+		}
+		combineBlockLengths = Collections.unmodifiableMap(combineBlockLengths);
+	}
+	
 	private ChunkData[] chunks;
 	
 	private RegionFile() {
@@ -122,20 +136,6 @@ public class RegionFile {
 			}
 		}
 	}
-
-	private static final String[] combineKeys = {"Blocks", "Add", "Data", "BlockLight", "SkyLight"};
-	private static final Integer[] blockLengths = {4096, 2048, 2048, 2048, 2048};
-	private static Map<String, Integer> combineBlockLengths;
-	static {
-		combineBlockLengths = new HashMap<String, Integer>();
-		for (int i = 0; i < combineKeys.length; i++) {
-			String key = combineKeys[i];
-			Integer blockLength = blockLengths[i];
-			
-			combineBlockLengths.put(key, blockLength);
-		}
-		combineBlockLengths = Collections.unmodifiableMap(combineBlockLengths);
-	}
 	
 	public Tag makeArchive() {
 		Map<String, Tag> rootNodes = new HashMap<String, Tag>();
@@ -194,5 +194,27 @@ public class RegionFile {
 		NBTOutputStream nbtOut = new NBTOutputStream(fileOut);
 		nbtOut.writeTag(makeArchive());
 		nbtOut.close();
+	}
+
+	public void writeRegionFile(File tempFile) {
+		byte[][] chunkDataBlocks = new byte[1024][];
+		int[] chunkOffsets = new int[1024];
+		
+		for (int i = 0; i < 1024; ++i) {
+			if (chunks[i] != null) {
+				try {
+					chunkDataBlocks[i] = chunks[i].generateChunkBlock();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		chunkOffsets[0] = 1;
+		for (int i = 1; i < 1024; ++i) {
+			int prevSize = chunkDataBlocks[i - 1].length + 5;
+			int prevChunks = (int) Math.ceil(((double) prevSize) / 4096.0);
+			chunkOffsets[i] = chunkOffsets[i-1] + prevChunks;
+		}
 	}
 }

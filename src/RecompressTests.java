@@ -12,6 +12,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
@@ -64,7 +65,31 @@ public class RecompressTests {
 	}
 	
 	@Test
-	public void testConvertToValidNBT() throws IOException {
+	public void testRegenerateRegionFile() throws IOException {
+		// Read test.mca as master copy
+		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
+    	FileChannel inChan = testFile.getChannel();
+    	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
+    	inChan.read(buf);
+    	buf.flip();
+    	RegionFile region = RegionFile.parse(buf.array());
+    	
+    	// Read test_converted.mci.gz - should read to the same data
+		File archiveFile = new File("./assets/test_converted.mci.gz");
+		byte[] fileData = Files.readAllBytes(archiveFile.toPath());
+    	NBTInputStream reparser = new NBTInputStream(new ByteArrayInputStream(fileData));
+    	Tag root = reparser.readTag();
+
+    	assertEquals("Region", root.getName());
+    	assertEquals("1.0", ((CompoundTag) root).getValue().get("MRI Version").getValue());
+
+    	RegionFile reregion = RegionFile.fromArchive(root);
+    	
+    	compareRegions(region, reregion);
+	}
+	
+	@Test
+	public void testConvertReadBack() throws IOException {
 		RandomAccessFile testFile = new RandomAccessFile("./assets/test.mca", "r");
     	FileChannel inChan = testFile.getChannel();
     	ByteBuffer buf = ByteBuffer.allocate((int) testFile.length());
@@ -82,6 +107,12 @@ public class RecompressTests {
 
     	assertEquals("Region", root.getName());
     	assertEquals("1.0", ((CompoundTag) root).getValue().get("MRI Version").getValue());
+
+    	RegionFile reregion = RegionFile.fromArchive(root);
+    	// Reload original region
+    	region = RegionFile.parse(buf.array());
+    	
+    	compareRegions(region, reregion);
 	}
 	
 	@Test
@@ -101,5 +132,43 @@ public class RecompressTests {
 		// Clean up
 		Files.deleteIfExists(tempDir.resolve("test.mri.gz"));
 		Files.delete(tempDir);
+	}
+	
+	private void compareRegions(RegionFile region, RegionFile reregion) {
+    	for (int x = 0; x < 32; x++) {
+    		for (int z = 0; z < 32; z++) {
+    			ChunkData c1 = region.getChunk(x, z);
+    			ChunkData c2 = reregion.getChunk(x, z);
+    			assertEquals(c1 == null, c2 == null);
+    			
+    			if (c1 != null) {
+	    			for (int y = 0; y < 16; ++y) {
+	    				boolean c1HasSection = (c1.getSection(y) != null);
+	    				boolean c2HasSection = (c2.getSection(y) != null);
+	    				assertEquals(c1HasSection, c2HasSection);
+	    				
+	    				if (c1HasSection) {
+		    				for (String combineKey: RegionFile.combineBlockLengths.keySet()) {
+			    				// Pick a pseudo-random byte to look at
+			    				Random random = new Random(x);
+			    				random = new Random(random.nextInt() + z);
+			    				random = new Random(random.nextInt() + y);
+			    				
+			    				// Sample 50 random bytes, check identical
+			    				for (int rep = 0; rep < 50; ++rep) {
+				    				int selection = random.nextInt(RegionFile.combineBlockLengths.get(combineKey));
+				    				byte[] c1data = c1.getSection(y).getByteBlock(combineKey);
+				    				byte[] c2data = c2.getSection(y).getByteBlock(combineKey);
+				    				assertEquals(c1data == null, c2data == null);
+				    				if (c1data != null) {
+				    					assertEquals(c1data[selection], c2data[selection]);
+				    				}
+			    				}
+		    				}
+	    				}
+	    			}
+    			}
+    		}
+    	}
 	}
 }

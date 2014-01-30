@@ -9,16 +9,15 @@ import org.jnbt.CompoundTag;
 import org.jnbt.IntTag;
 import org.jnbt.ListTag;
 import org.jnbt.ByteArrayTag;
+import org.jnbt.StringTag;
 import org.jnbt.Tag;
 
 
 public class SectionData {
 	private CompoundTag sectionTag;
-	private Map<String, Tag> residualFields;
 
 	public SectionData(CompoundTag sectionTag) {
 		this.sectionTag = sectionTag;
-		resetResidualFields();
 	}
 	
 	public int getY() {
@@ -71,24 +70,22 @@ public class SectionData {
 	}
 	
 	public void extractBlockData(Map<String, Integer> blockSizes, Map<String, OutputStream> combinedOutputs) throws IOException {
-		for (String key : new ArrayList<String>(residualFields.keySet())) {
-			if (combinedOutputs.containsKey(key)) {
+		Map<String, Tag> residualFields = new HashMap<String, Tag>(sectionTag.getValue());
+		for (String key : new ArrayList<String>(sectionTag.getValue().keySet())) {
+			if (combinedOutputs.containsKey(key) && residualFields.containsKey(key)) {
 				ByteArrayTag value = (ByteArrayTag) residualFields.get(key);
 				if (blockSizes.get(key).equals(value.getValue().length)) {
 					combinedOutputs.get(key).write(value.getValue());
 					residualFields.remove(key);
-					residualFields.put(key, new ByteArrayTag(key, new byte[0]));
+					residualFields.put(key + "Storage", new StringTag(key + "Storage", "BlockData"));
 				}
 			}
 		}
+		sectionTag = new CompoundTag(sectionTag.getName(), residualFields);
 	}
 	
-	public void resetResidualFields() {
-		this.residualFields = new HashMap<String, Tag>(sectionTag.getValue());
-	}
-	
-	public Map<String, Tag> getResidualFields() {
-		return this.residualFields;
+	public Map<String, Tag> getTagFields() {
+		return sectionTag.getValue();
 	}
 
 	public String getTagName() {
@@ -97,12 +94,15 @@ public class SectionData {
 
 	public void regenerateBlockData(Map<String, Integer> blockSizes,
 			Map<String, InputStream> combinedStreams) throws IOException {
+		Map<String, Tag> residualFields = new HashMap<String, Tag>(sectionTag.getValue());
 		for (String key : new ArrayList<String>(combinedStreams.keySet())) {
-			if (residualFields.containsKey(key) && ((ByteArrayTag) residualFields.get(key)).getValue().length == 0) {
+			if (!residualFields.containsKey(key) && residualFields.containsKey(key + "Storage") && residualFields.get(key + "Storage").getValue().equals("BlockData")) {
 				byte[] sectionData = new byte[blockSizes.get(key)];
 				combinedStreams.get(key).read(sectionData);
+				residualFields.remove(key + "Storage");
 				residualFields.put(key, new ByteArrayTag(key, sectionData));
 			}
 		}
+		sectionTag = new CompoundTag(sectionTag.getName(), residualFields);
 	}
 }
