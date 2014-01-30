@@ -1,18 +1,24 @@
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.jnbt.ByteArrayTag;
 import org.jnbt.CompoundTag;
+import org.jnbt.IntTag;
 import org.jnbt.ListTag;
 import org.jnbt.NBTOutputStream;
 import org.jnbt.StringTag;
@@ -22,7 +28,7 @@ import org.jnbt.Tag;
 public class RegionFile {
 	private ChunkData[] chunks;
 	
-	public RegionFile() {
+	private RegionFile() {
 		chunks = new ChunkData[1024];
 	}
 	
@@ -57,8 +63,79 @@ public class RegionFile {
 		return region;
 	}
 	
+	public static RegionFile fromArchive(Tag rootTag) {
+		assert(rootTag instanceof CompoundTag);
+		
+		CompoundTag root = (CompoundTag) rootTag;
+		Tag versionTag = root.getValue().get("MRI Version");
+		assert(versionTag != null);
+		assert(versionTag instanceof StringTag);
+		assert(((StringTag) versionTag).getValue().equals("1.0"));
+		
+		RegionFile region = new RegionFile();
+		
+		ListTag chunkList = (ListTag) root.getValue().get("Chunks");
+		for (Tag chunkTag : chunkList.getValue()) {
+			CompoundTag chunkRoot = (CompoundTag) chunkTag;
+			
+			// Remove timestamp field, pass separately
+			Map<String, Tag> chunkFields = new HashMap<String, Tag>(chunkRoot.getValue());
+			IntTag timestamp = (IntTag) chunkFields.remove("Last Modified");
+			chunkRoot = new CompoundTag(chunkRoot.getName(), chunkFields);
+			
+			ChunkData chunk;
+			if (timestamp == null) {
+				chunk = new ChunkData(0, chunkTag);
+			} else {
+				chunk = new ChunkData(timestamp.getValue(), chunkTag);
+			}
+			
+			region.setChunk(chunk.getZ() * 32 + chunk.getX(), chunk);
+		}
+		
+		CompoundTag blockData = (CompoundTag) root.getValue().get("BlockData");
+		Map<String, Tag> combinedValues = blockData.getValue();
+		Map<String, InputStream> restoreInputs = new HashMap<String, InputStream>();
+		for (String key : combineKeys) {
+			if (combinedValues.containsKey(key)) {
+				restoreInputs.put(key, new ByteArrayInputStream(((ByteArrayTag) combinedValues.get(key)).getValue()));
+			}
+		}
+		
+		region.restoreBlockData(restoreInputs);
+		
+		return region;
+	}
+	
+	private void restoreBlockData(Map<String, InputStream> restoreInputs) {
+		// Restore grouped data
+		for (int y = 0; y < 16; y++) {
+			for (int i = 0; i < 1024; ++i) {
+				if (chunks[i] != null) {
+					try {
+						chunks[i].regenerateYLayerData(y, combineBlockLengths, restoreInputs);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	}
+
 	private static final String[] combineKeys = {"Blocks", "Add", "Data", "BlockLight", "SkyLight"};
 	private static final Integer[] blockLengths = {4096, 2048, 2048, 2048, 2048};
+	private static Map<String, Integer> combineBlockLengths;
+	static {
+		combineBlockLengths = new HashMap<String, Integer>();
+		for (int i = 0; i < combineKeys.length; i++) {
+			String key = combineKeys[i];
+			Integer blockLength = blockLengths[i];
+			
+			combineBlockLengths.put(key, blockLength);
+		}
+		combineBlockLengths = Collections.unmodifiableMap(combineBlockLengths);
+	}
 	
 	public Tag makeArchive() {
 		Map<String, Tag> rootNodes = new HashMap<String, Tag>();
@@ -66,14 +143,12 @@ public class RegionFile {
 
 		// Output streams
 		Map<String, OutputStream> combinedStreams = new HashMap<String, OutputStream>();
-		Map<String, Integer> combineBlockLengths = new HashMap<String, Integer>();
 		
 		for (int i = 0; i < combineKeys.length; i++) {
 			String key = combineKeys[i];
 			Integer blockLength = blockLengths[i];
 			
 			combinedStreams.put(key, new ByteArrayOutputStream());
-			combineBlockLengths.put(key, blockLength);
 		}
 		
 		// Extract grouped data

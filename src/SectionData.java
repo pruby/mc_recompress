@@ -77,6 +77,7 @@ public class SectionData {
 				if (blockSizes.get(key).equals(value.getValue().length)) {
 					combinedOutputs.get(key).write(value.getValue());
 					residualFields.remove(key);
+					residualFields.put(key, new ByteArrayTag(key, new byte[0]));
 				}
 			}
 		}
@@ -97,7 +98,7 @@ public class SectionData {
 	public void regenerateBlockData(Map<String, Integer> blockSizes,
 			Map<String, InputStream> combinedStreams) throws IOException {
 		for (String key : new ArrayList<String>(combinedStreams.keySet())) {
-			if (!residualFields.containsKey(key)) {
+			if (residualFields.containsKey(key) && ((ByteArrayTag) residualFields.get(key)).getValue().length == 0) {
 				byte[] sectionData = new byte[blockSizes.get(key)];
 				combinedStreams.get(key).read(sectionData);
 				residualFields.put(key, new ByteArrayTag(key, sectionData));

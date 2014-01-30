@@ -146,6 +146,7 @@ public class ChunkData {
 		}
 		
 		chunkFields.put("Sections", new ListTag(origSectionTag.getName(), CompoundTag.class, sections));
+		chunkFields.put("Last Modified", new IntTag("Last Modified", timestamp));
 		
 		return new CompoundTag(chunkRootTag.getName(), chunkFields);
 	}
