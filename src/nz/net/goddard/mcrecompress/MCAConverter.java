@@ -20,10 +20,18 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	private Path directory;
 	private int threads;
 	private ExecutorService workers;
+	private final ArchiveCompression compressionMode;
 	
 	public MCAConverter(Path tempDir, int threads) {
 		this.directory = tempDir;
 		this.threads = threads;
+		this.compressionMode = ArchiveCompression.BZIP2;
+	}
+	
+	public MCAConverter(Path tempDir, int threads, ArchiveCompression compressionMode) {
+		this.directory = tempDir;
+		this.threads = threads;
+		this.compressionMode = compressionMode;
 	}
 
 	public synchronized void convertMCAFiles() throws IOException {
@@ -61,8 +69,16 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	RegionFile region = RegionFile.parse(fileData);
 	        	
 	        	File tempFile = File.createTempFile("conversion", ".mri.t", file.getParent().toFile());
-	        	String newFileName = file.getFileName().toString().replace(".mca", ".mri.bz2");
-	        	region.writeArchive(tempFile, ArchiveCompression.BZIP2);
+	        	
+	        	String newFileName;
+	        	if (compressionMode == ArchiveCompression.BZIP2) {
+	        		newFileName = file.getFileName().toString().replace(".mca", ".mri.bz2");
+	        	} else if (compressionMode == ArchiveCompression.GZIP) {
+	        		newFileName = file.getFileName().toString().replace(".mca", ".mri.gz");
+	        	} else {
+	        		newFileName = file.getFileName().toString().replace(".mca", ".mri");
+	        	}
+	        	region.writeArchive(tempFile, compressionMode);
 	        	
 	        	Path newPath = file.resolveSibling(newFileName);
 	        	

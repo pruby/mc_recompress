@@ -93,6 +93,7 @@ public class RecompressTests {
     	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
     	File tempFile = File.createTempFile("test", ".mri.bz2");
+    	tempFile.deleteOnExit();
     	region.writeArchive(tempFile);
     	
     	byte[] fileData = Files.readAllBytes(tempFile.toPath());
