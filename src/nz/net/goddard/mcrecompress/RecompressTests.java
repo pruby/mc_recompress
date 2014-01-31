@@ -116,14 +116,14 @@ public class RecompressTests {
     	Path assetPath = FileSystems.getDefault().getPath("assets/test.mca");
     	Files.copy(assetPath, tempDir.resolve("test.mca"));
     	
-		MCAConverter converter = new MCAConverter(tempDir);
+		MCAConverter converter = new MCAConverter(tempDir, 1);
 		converter.convertMCAFiles();
 
 		// File should have been converted and original deleted
 		assertTrue(Files.exists(tempDir.resolve("test.mri.bz2")));
 		assertFalse(Files.exists(tempDir.resolve("test.mca")));
     	
-		MCARegenerator regen = new MCARegenerator(tempDir);
+		MCARegenerator regen = new MCARegenerator(tempDir, 1);
 		regen.regenerateMCAFiles();
 
 		// File should have been converted and original deleted

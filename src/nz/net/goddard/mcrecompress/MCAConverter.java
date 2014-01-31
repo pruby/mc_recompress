@@ -11,24 +11,52 @@ import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class MCAConverter extends SimpleFileVisitor<Path> {
 	private Path directory;
+	private int threads;
+	private ExecutorService workers;
 	
-	public MCAConverter(Path tempDir) {
+	public MCAConverter(Path tempDir, int threads) {
 		this.directory = tempDir;
+		this.threads = threads;
 	}
 
-	public void convertMCAFiles() throws IOException {
+	public synchronized void convertMCAFiles() throws IOException {
+		this.workers = Executors.newFixedThreadPool(threads);
 		Files.walkFileTree(directory, this);
+		workers.shutdown();
+		try {
+			workers.awaitTermination(5, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
     @Override
     public FileVisitResult visitFile(Path file,
             BasicFileAttributes attrs) {
-    	try {
-	        if (file.toString().endsWith(".mca")) {
+        if (file.toString().endsWith(".mca")) {
+        	workers.execute(new ConversionTask(file));
+        }
+        return FileVisitResult.CONTINUE;
+    }
+    
+    private class ConversionTask implements Runnable {
+
+    	private Path file;
+
+		public ConversionTask(Path file) {
+    		this.file = file;
+    	}
+    	
+		@Override
+		public void run() {
+			try {
 	        	byte[] fileData = Files.readAllBytes(file);
 	        	RegionFile region = RegionFile.parse(fileData);
 	        	
@@ -41,10 +69,10 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	Files.deleteIfExists(newPath);
 	        	Files.move(tempFile.toPath(), newPath);
 	        	Files.delete(file);
-	        }
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    	}
-        return FileVisitResult.CONTINUE;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+    	
     }
 }

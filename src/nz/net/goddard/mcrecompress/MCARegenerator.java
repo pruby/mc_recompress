@@ -12,6 +12,9 @@ import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.itadaki.bzip2.BZip2InputStream;
 import org.jnbt.NBTInputStream;
@@ -20,20 +23,45 @@ import org.jnbt.Tag;
 
 public class MCARegenerator extends SimpleFileVisitor<Path> {
 	private Path directory;
+	private int threads;
+	private ExecutorService workers;
 	
-	public MCARegenerator(Path tempDir) {
+	public MCARegenerator(Path tempDir, int threads) {
 		this.directory = tempDir;
+		this.threads = threads;
 	}
 
-	public void regenerateMCAFiles() throws IOException {
+	public synchronized void regenerateMCAFiles() throws IOException {
+		this.workers = Executors.newFixedThreadPool(threads);
 		Files.walkFileTree(directory, this);
+		workers.shutdown();
+		try {
+			workers.awaitTermination(5, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
     @Override
     public FileVisitResult visitFile(Path file,
             BasicFileAttributes attrs) {
-    	try {
-	        if (file.toString().endsWith(".mri") || file.toString().endsWith(".mri.bz2") || file.toString().endsWith(".mri.bz2")) {
+        if (file.toString().endsWith(".mca")) {
+        	workers.execute(new ConversionTask(file));
+        }
+        return FileVisitResult.CONTINUE;
+    }
+    
+    private class ConversionTask implements Runnable {
+
+    	private Path file;
+
+		public ConversionTask(Path file) {
+    		this.file = file;
+    	}
+    	
+		@Override
+		public void run() {
+			try {
 	        	RegionFile region = RegionFile.readArchive(file.toFile());
 	        	
 	        	File tempFile = File.createTempFile("conversion", ".mca.t", file.getParent().toFile());
@@ -45,10 +73,10 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 	        	Files.deleteIfExists(newPath);
 	        	Files.move(tempFile.toPath(), newPath);
 	        	Files.delete(file);
-	        }
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    	}
-        return FileVisitResult.CONTINUE;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+    	
     }
 }
