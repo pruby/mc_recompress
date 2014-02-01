@@ -108,7 +108,7 @@ public class RegionFile {
 				chunk = new ChunkData(timestamp.getValue(), chunkTag);
 			}
 			
-			region.setChunk(chunk.getZ() * 32 + chunk.getX(), chunk);
+			region.setChunk(chunk.getRegionIndex(), chunk);
 		}
 		
 		CompoundTag blockData = (CompoundTag) root.getValue().get("BlockData");

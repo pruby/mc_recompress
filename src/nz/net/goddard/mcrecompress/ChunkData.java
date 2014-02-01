@@ -123,10 +123,20 @@ public class ChunkData {
 		return xPos.getValue();
 	}
 	
+	public int getRegionLocalX() {
+		int x = getX();
+		return ((x % 32) + 32) % 32;
+	}
+	
 	public int getZ() {
 		CompoundTag level = (CompoundTag) chunkRootTag.getValue().get("Level");
 		IntTag zPos = (IntTag) level.getValue().get("zPos");
 		return zPos.getValue();
+	}
+	
+	public int getRegionLocalZ() {
+		int z = getZ();
+		return ((z % 32) + 32) % 32;
 	}
 	
 	public SectionData getSection(int y) {
@@ -197,5 +207,9 @@ public class ChunkData {
 		
 		dataOut.close();
 		return bytesOut.toByteArray();
+	}
+
+	public int getRegionIndex() {
+		return getRegionLocalZ() * 32 + getRegionLocalX();
 	}
 }
