@@ -86,7 +86,7 @@ public class MainWindow extends JFrame {
 	}
 
 	public void logMessage(String message) {
-		if (logMessages.size() > 12) {
+		if (logMessages.size() > 30) {
 			logMessages.remove(0);
 		}
 		logMessages.add(message);
@@ -142,6 +142,7 @@ public class MainWindow extends JFrame {
 				enableActions();
 			}
 		};
+		disableActions();
 		new Thread(task).start();
 	}
 	
