@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class MCAConverter extends SimpleFileVisitor<Path> {
@@ -21,17 +23,20 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	private int threads;
 	private ExecutorService workers;
 	private final ArchiveCompression compressionMode;
+	private final Logger logger;
 	
 	public MCAConverter(Path tempDir, int threads) {
 		this.directory = tempDir;
 		this.threads = threads;
 		this.compressionMode = ArchiveCompression.BZIP2;
+		this.logger = Logger.getLogger("main");
 	}
 	
 	public MCAConverter(Path tempDir, int threads, ArchiveCompression compressionMode) {
 		this.directory = tempDir;
 		this.threads = threads;
 		this.compressionMode = compressionMode;
+		this.logger = Logger.getLogger("main");
 	}
 
 	public synchronized void convertMCAFiles() throws IOException {
@@ -65,6 +70,8 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 		@Override
 		public void run() {
 			try {
+				logger.log(Level.INFO, "Compressing " + file.toString());
+				
 	        	byte[] fileData = Files.readAllBytes(file);
 	        	RegionFile region = RegionFile.parse(fileData);
 	        	
@@ -86,7 +93,7 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	Files.move(tempFile.toPath(), newPath);
 	        	Files.delete(file);
 			} catch (IOException e) {
-				e.printStackTrace();
+				logger.log(Level.SEVERE, e.toString());
 			}
 		}
     	
