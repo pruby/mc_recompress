@@ -41,13 +41,17 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 			e.printStackTrace();
 		}
 	}
+	
+	static final String[] matchExtensions = {".mri", ".mri.gz", ".mri.bz2"};
 
     @Override
     public FileVisitResult visitFile(Path file,
             BasicFileAttributes attrs) {
-        if (file.toString().endsWith(".mca")) {
-        	workers.execute(new ConversionTask(file));
-        }
+    	for (String extension : matchExtensions) {
+	        if (file.toString().endsWith(extension)) {
+	        	workers.execute(new ConversionTask(file));
+	        }
+    	}
         return FileVisitResult.CONTINUE;
     }
     
@@ -67,7 +71,15 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 	        	File tempFile = File.createTempFile("conversion", ".mca.t", file.getParent().toFile());
 	        	region.writeRegionFile(tempFile);
 	        	
-	        	String newFileName = file.getFileName().toString().replaceAll("\\.mri(?:\\.gz|\\.bz2)?$", ".mca");
+	        	String oldFileName = file.getFileName().toString();
+	        	String newFileName = oldFileName + ".out";
+	        	for (String extension : matchExtensions) {
+	        		if (oldFileName.endsWith(extension)) {
+	        			newFileName = oldFileName.replace(extension, ".mca");
+	        			break;
+	        		}
+	        	}
+	        	
 	        	Path newPath = file.resolveSibling(newFileName);
 	        	
 	        	Files.deleteIfExists(newPath);

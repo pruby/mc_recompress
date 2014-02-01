@@ -2,6 +2,7 @@ package nz.net.goddard.mcrecompress;
 import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -108,6 +109,35 @@ public class RecompressTests {
     	region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
     	compareRegions(region, reregion);
+	}
+	
+	@Test
+	public void testChunkDataBlock() throws IOException {
+    	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
+    	
+    	ChunkData chunk = null;
+    	outer:
+    	for (int x = 0; x < 32; ++x) {
+    		for (int z = 0; z < 32; ++z) {
+    			if (region.getChunk(x,  z) != null) {
+    				chunk = region.getChunk(x,  z);
+    				break outer;
+    			}
+    		}
+    	}
+    	
+    	byte[] chunkBlock = chunk.generateChunkBlock();
+    	DataInputStream blockReader = new DataInputStream(new ByteArrayInputStream(chunkBlock));
+    	int dataLength = blockReader.readInt();
+    	byte compressionMethod = blockReader.readByte();
+    	assertEquals(2, compressionMethod);
+    	byte[] compressedData = new byte[dataLength - 1];
+    	blockReader.read(compressedData);
+    	
+    	ByteArrayInputStream rereader = new ByteArrayInputStream(compressedData);
+    	InflaterInputStream reinflater = new InflaterInputStream(rereader);
+    	NBTInputStream reparser = new NBTInputStream(reinflater, false);
+    	reparser.readTag();
 	}
 	
 	@Test

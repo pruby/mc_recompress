@@ -171,13 +171,14 @@ public class ChunkData {
 		
 		Map<String, Tag> topFields = new HashMap<String, Tag>();
 		topFields.put("Level", levelTag);
+		topFields.put("Last Modified", new IntTag("Last Modified", timestamp));
 		return new CompoundTag(chunkRootTag.getName(), topFields);
 	}
 
 	public byte[] generateChunkBlock() throws IOException {
 		ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
 		DeflaterOutputStream deflateOut = new DeflaterOutputStream(bytesOut);
-		NBTOutputStream nbtOut = new NBTOutputStream(deflateOut);
+		NBTOutputStream nbtOut = new NBTOutputStream(deflateOut, false);
 		nbtOut.writeTag(getChunkRootTag());
 		nbtOut.close();
 		deflateOut.close();
@@ -191,6 +192,11 @@ public class ChunkData {
 		dataOut.writeInt(sz);
 		dataOut.writeByte(2);
 		dataOut.write(compressedData);
+		
+		int blockOverage = (sz + 4) % 4096;
+		if (blockOverage > 0) {
+			dataOut.write(new byte[4096 - blockOverage]);
+		}
 		
 		dataOut.close();
 		return bytesOut.toByteArray();

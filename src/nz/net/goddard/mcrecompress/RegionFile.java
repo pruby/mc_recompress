@@ -261,10 +261,10 @@ public class RegionFile {
 		for (int i = 0; i < 1024; ++i) {
 			
 			if (chunkDataBlocks[i] != null) {
-				int size = chunkDataBlocks[i].length + 5;
-				int chunks = (int) Math.ceil(((double) size) / 4096.0);
+				int size = chunkDataBlocks[i].length;
+				int chunks = size / 4096;
 				chunkOffsets[i] = position * 4096;
-				chunkPositionHeaders[i] = (position << 8) + (size & 255);
+				chunkPositionHeaders[i] = (position << 8) + (chunks & 255);
 				position += chunks;
 			} else {
 				chunkOffsets[i] = 0;
@@ -293,24 +293,13 @@ public class RegionFile {
 		// Chunk data
 		for (int i = 0; i < 1024; ++i) {
 			if (chunkDataBlocks[i] != null) {
-				if (outAmount < chunkOffsets[i]) {
-					// Pad to fit
-					byte[] padding = new byte[chunkOffsets[i] - outAmount];
-					out.write(padding);
-					outAmount += padding.length;
-				}
 				assert(outAmount == chunkOffsets[i]);
 				out.write(chunkDataBlocks[i]);
 				outAmount += chunkDataBlocks[i].length;
 			}
 		}
 		
-		if (outAmount < finalLength) {
-			// Pad to fit
-			byte[] padding = new byte[finalLength - outAmount];
-			out.write(padding);
-			outAmount += padding.length;
-		}
+		assert(outAmount == finalLength);
 		
 		out.close();
 	}
