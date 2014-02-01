@@ -1,25 +1,15 @@
 package nz.net.goddard.mcrecompress;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.CopyOption;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-import org.itadaki.bzip2.BZip2InputStream;
-import org.jnbt.NBTInputStream;
-import org.jnbt.Tag;
 
 
 public class MCARegenerator extends SimpleFileVisitor<Path> {

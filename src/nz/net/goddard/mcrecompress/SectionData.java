@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jnbt.ByteArrayTag;
 import org.jnbt.CompoundTag;
 import org.jnbt.IntTag;
-import org.jnbt.ListTag;
-import org.jnbt.ByteArrayTag;
 import org.jnbt.StringTag;
 import org.jnbt.Tag;
 

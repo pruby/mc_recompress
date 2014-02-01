@@ -1,28 +1,23 @@
 package nz.net.goddard.mcrecompress;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
-import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import org.itadaki.bzip2.BZip2InputStream;
 import org.jnbt.CompoundTag;
 import org.jnbt.NBTInputStream;
 import org.jnbt.Tag;
-import org.junit.Rule;
 import org.junit.Test;
 
 

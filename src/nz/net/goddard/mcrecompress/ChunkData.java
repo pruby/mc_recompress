@@ -2,7 +2,6 @@ package nz.net.goddard.mcrecompress;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,10 +18,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import javax.management.RuntimeErrorException;
-
-import org.jnbt.CompoundTag;
 import org.jnbt.ByteTag;
+import org.jnbt.CompoundTag;
 import org.jnbt.IntTag;
 import org.jnbt.ListTag;
 import org.jnbt.NBTInputStream;

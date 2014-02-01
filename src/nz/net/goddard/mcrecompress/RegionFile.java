@@ -3,7 +3,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,11 +10,9 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,7 +150,6 @@ public class RegionFile {
 		
 		for (int i = 0; i < combineKeys.length; i++) {
 			String key = combineKeys[i];
-			Integer blockLength = blockLengths[i];
 			
 			combinedStreams.put(key, new ByteArrayOutputStream());
 		}
