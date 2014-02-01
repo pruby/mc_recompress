@@ -41,6 +41,7 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 
 	public synchronized void convertMCAFiles() throws IOException {
 		this.workers = Executors.newFixedThreadPool(threads);
+		logger.info("Packing MCAs");
 		Files.walkFileTree(directory, this);
 		workers.shutdown();
 		try {
@@ -48,6 +49,7 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		logger.info("Done packing MCAs");
 	}
 
     @Override

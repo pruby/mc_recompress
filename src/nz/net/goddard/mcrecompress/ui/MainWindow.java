@@ -30,20 +30,23 @@ public class MainWindow extends JFrame {
 	private JTextArea logArea;
 	private List<String> logMessages;
 	private Logger logger = null;
+	private List<Component> actionControls;
 	
 	public MainWindow() {
 		super("MC Recompressor");
 		
 		logMessages = new ArrayList<String>();
+		actionControls = new ArrayList<Component>();
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setupLoggers();
 		buildUI();
 		
 		pack();
 	}
 	
 	private void setupLoggers() {
-		WindowHandler handler = new WindowHandler(this);
+		LogWindowHandler handler = new LogWindowHandler(this);
 		this.logger = Logger.getLogger("main");
 		logger.addHandler(handler);
 	}
@@ -51,7 +54,6 @@ public class MainWindow extends JFrame {
 	private void buildUI() {
 		// Text area
 		logArea = new JTextArea();
-		logArea.setEnabled(false);
 		logArea.setPreferredSize(new Dimension(600, 500));
 		
 		getContentPane().add(logArea, BorderLayout.NORTH);
@@ -61,22 +63,17 @@ public class MainWindow extends JFrame {
 		actionButtons.setLayout(new FlowLayout(FlowLayout.TRAILING));
 		
 		JButton packButton = new JButton("Pack MCAs");
+		actionControls.add(packButton);
 		packButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				convertMCAs();
 			}
 		});
-		
 		actionButtons.add(packButton , BorderLayout.WEST);
-		packButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				convertMRIs();
-			}
-		});
 		
 		JButton unpackButton = new JButton("Unpack MRIs");
+		actionControls.add(unpackButton);
 		unpackButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -103,25 +100,49 @@ public class MainWindow extends JFrame {
 	}
 	
 	private void convertMCAs() {
-		Path dir = FileSystems.getDefault().getPath(".");
-		MCAConverter converter = new MCAConverter(dir, 4);
-		try {
-			converter.convertMCAFiles();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		Runnable task = new Runnable() {
+			public void run() {
+				Path dir = FileSystems.getDefault().getPath(".");
+				MCAConverter converter = new MCAConverter(dir, 2);
+				try {
+					converter.convertMCAFiles();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				enableActions();			}
+		};
+		disableActions();
+		new Thread(task).start();
+	}
+	
+	private void disableActions() {
+		for (Component control : actionControls) {
+			control.setEnabled(false);
 		}
 	}
 	
-	private void convertMRIs() {
-		Path dir = FileSystems.getDefault().getPath(".");
-		MCARegenerator regen = new MCARegenerator(dir, 4);
-		try {
-			regen.regenerateMCAFiles();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	private void enableActions() {
+		for (Component control : actionControls) {
+			control.setEnabled(true);
 		}
+	}
+
+	private void convertMRIs() {
+		Runnable task = new Runnable() {
+			public void run() {
+				Path dir = FileSystems.getDefault().getPath(".");
+				MCARegenerator regen = new MCARegenerator(dir, 2);
+				try {
+					regen.regenerateMCAFiles();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				enableActions();
+			}
+		};
+		new Thread(task).start();
 	}
 	
 	public static void main(String[] args) {

@@ -5,17 +5,16 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
+import java.util.logging.SimpleFormatter;
 
-class WindowHandler extends Handler {
+class LogWindowHandler extends Handler {
 	private MainWindow window = null;
-
-	private Formatter formatter = null;
 
 	private Level level = null;
 
-	private static WindowHandler handler = null;
+	private static LogWindowHandler handler = null;
 
-	public WindowHandler(MainWindow window) {
+	public LogWindowHandler(MainWindow window) {
 		LogManager manager = LogManager.getLogManager();
 		String className = this.getClass().getName();
 		String level = manager.getProperty(className + ".level");
@@ -27,7 +26,7 @@ class WindowHandler extends Handler {
 		String message = null;
 		if (!isLoggable(record))
 			return;
-		message = getFormatter().format(record);
+		message = record.getMessage();
 		window.logMessage(message);
 	}
 

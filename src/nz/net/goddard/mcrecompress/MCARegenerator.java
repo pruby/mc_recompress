@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import org.itadaki.bzip2.BZip2InputStream;
 import org.jnbt.NBTInputStream;
@@ -25,14 +26,17 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 	private Path directory;
 	private int threads;
 	private ExecutorService workers;
+	private Logger logger;
 	
 	public MCARegenerator(Path tempDir, int threads) {
 		this.directory = tempDir;
 		this.threads = threads;
+		this.logger = Logger.getLogger("main");
 	}
 
 	public synchronized void regenerateMCAFiles() throws IOException {
 		this.workers = Executors.newFixedThreadPool(threads);
+		logger.info("Regenerating MCAs");
 		Files.walkFileTree(directory, this);
 		workers.shutdown();
 		try {
@@ -40,6 +44,7 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		logger.info("Finished regenerating MCAs");
 	}
 	
 	static final String[] matchExtensions = {".mri", ".mri.gz", ".mri.bz2"};
@@ -66,6 +71,8 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 		@Override
 		public void run() {
 			try {
+				logger.info("Unpacking " + file.toString());
+				
 	        	RegionFile region = RegionFile.readArchive(file.toFile());
 	        	
 	        	File tempFile = File.createTempFile("conversion", ".mca.t", file.getParent().toFile());
