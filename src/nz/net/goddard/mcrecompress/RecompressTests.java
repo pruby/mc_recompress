@@ -107,6 +107,28 @@ public class RecompressTests {
 	}
 	
 	@Test
+	public void testConvertReadBackNine() throws IOException {
+    	RegionFile region = RegionFile.readMCA(new File("./assets/nine.mca"));
+    	
+    	File tempFile = File.createTempFile("nine", ".mri.bz2");
+    	tempFile.deleteOnExit();
+    	region.writeArchive(tempFile);
+    	
+    	byte[] fileData = Files.readAllBytes(tempFile.toPath());
+    	NBTInputStream reparser = new NBTInputStream(new BZip2InputStream(new ByteArrayInputStream(fileData), false), false);
+    	Tag root = reparser.readTag();
+
+    	assertEquals("Region", root.getName());
+    	assertEquals("1.0", ((CompoundTag) root).getValue().get("MRI Version").getValue());
+
+    	RegionFile reregion = RegionFile.fromArchive(root);
+    	// Reload original region
+    	region = RegionFile.readMCA(new File("./assets/nine.mca"));
+    	
+    	compareRegions(region, reregion);
+	}
+	
+	@Test
 	public void testChunkDataBlock() throws IOException {
     	RegionFile region = RegionFile.readMCA(new File("./assets/test.mca"));
     	
