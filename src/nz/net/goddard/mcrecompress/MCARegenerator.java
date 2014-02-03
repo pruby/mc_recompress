@@ -38,7 +38,7 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 	}
 	
 	public synchronized void regenerateSingleMCA(Path file) throws IOException {
-		new ConversionTask(file).run();
+		new ConversionTask(file, false).run();
 	}
 	
 	static final String[] matchExtensions = {".mri", ".mri.gz", ".mri.bz2"};
@@ -48,7 +48,7 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
             BasicFileAttributes attrs) {
     	for (String extension : matchExtensions) {
 	        if (file.toString().endsWith(extension)) {
-	        	workers.execute(new ConversionTask(file));
+	        	workers.execute(new ConversionTask(file, true));
 	        }
     	}
         return FileVisitResult.CONTINUE;
@@ -57,9 +57,11 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
     private class ConversionTask implements Runnable {
 
     	private Path file;
+    	private boolean delete;
 
-		public ConversionTask(Path file) {
+		public ConversionTask(Path file, boolean delete) {
     		this.file = file;
+    		this.delete = delete;
     	}
     	
 		@Override
@@ -85,7 +87,9 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 	        	
 	        	Files.deleteIfExists(newPath);
 	        	Files.move(tempFile.toPath(), newPath);
-	        	Files.delete(file);
+
+	        	if (delete)
+	        		Files.delete(file);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
