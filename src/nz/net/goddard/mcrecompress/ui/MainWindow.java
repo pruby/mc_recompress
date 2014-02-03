@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -56,10 +58,36 @@ public class MainWindow extends JFrame {
 		
 		getContentPane().add(logArea, BorderLayout.NORTH);
 		
+		// Path field
+		
+		JPanel pathPanel = new JPanel();
+		pathPanel.setLayout(new FlowLayout());
+		
+		pathPanel.add(new JLabel("World to pack: "));
+		
 		pathField = new JTextField();
 		Path defaultPath =  FileSystems.getDefault().getPath("");
 		pathField.setText(defaultPath.toAbsolutePath().toString());
-		getContentPane().add(pathField, BorderLayout.CENTER);
+		pathPanel.add(pathField);
+		pathField.setPreferredSize(new Dimension(800, 40));
+		
+		final MainWindow window = this;
+		
+		JButton choosePath = new JButton("...");
+		choosePath.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser fileSelect = new JFileChooser();
+				fileSelect.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				int result = fileSelect.showOpenDialog(window);
+				if (result == JFileChooser.APPROVE_OPTION) {
+					pathField.setText(fileSelect.getSelectedFile().toString());
+				}
+			}
+		});
+		pathPanel.add(choosePath);
+		
+		getContentPane().add(pathPanel, BorderLayout.CENTER);
 		
 		// Buttons
 		JPanel actionButtons = new JPanel();
