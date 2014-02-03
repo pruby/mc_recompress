@@ -181,6 +181,8 @@ public class MainWindow extends JFrame {
 		if (args.length == 0) {
 			MainWindow window = new MainWindow();
 			window.setVisible(true);
+		} else {
+			CommandLineInterface.main(args);
 		}
 	}
 }
