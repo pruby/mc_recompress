@@ -37,6 +37,10 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 		logger.info("Finished regenerating MCAs");
 	}
 	
+	public synchronized void regenerateSingleMCA(Path file) throws IOException {
+		new ConversionTask(file).run();
+	}
+	
 	static final String[] matchExtensions = {".mri", ".mri.gz", ".mri.bz2"};
 
     @Override
@@ -65,7 +69,7 @@ public class MCARegenerator extends SimpleFileVisitor<Path> {
 				
 	        	RegionFile region = RegionFile.readArchive(file.toFile());
 	        	
-	        	File tempFile = File.createTempFile("conversion", ".mca.t", file.getParent().toFile());
+	        	File tempFile = File.createTempFile("conversion", ".mca.t", file.toAbsolutePath().getParent().toFile());
 	        	region.writeRegionFile(tempFile);
 	        	
 	        	String oldFileName = file.getFileName().toString();

@@ -46,6 +46,10 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 		}
 		logger.info("Done packing MCAs");
 	}
+	
+	public synchronized void convertSingleMCA(Path file) throws IOException {
+		new ConversionTask(file).run();
+	}
 
     @Override
     public FileVisitResult visitFile(Path file,
@@ -72,7 +76,7 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	byte[] fileData = Files.readAllBytes(file);
 	        	RegionFile region = RegionFile.parse(fileData);
 	        	
-	        	File tempFile = File.createTempFile("conversion", ".mri.t", file.getParent().toFile());
+	        	File tempFile = File.createTempFile("conversion", ".mri.t", file.toAbsolutePath().getParent().toFile());
 	        	
 	        	String newFileName;
 	        	if (compressionMode == ArchiveCompression.BZIP2) {
