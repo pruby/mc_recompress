@@ -48,14 +48,14 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	}
 	
 	public synchronized void convertSingleMCA(Path file) throws IOException {
-		new ConversionTask(file).run();
+		new ConversionTask(file, false).run();
 	}
 
     @Override
     public FileVisitResult visitFile(Path file,
             BasicFileAttributes attrs) {
         if (file.toString().endsWith(".mca")) {
-        	workers.execute(new ConversionTask(file));
+        	workers.execute(new ConversionTask(file, true));
         }
         return FileVisitResult.CONTINUE;
     }
@@ -63,9 +63,11 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
     private class ConversionTask implements Runnable {
 
     	private Path file;
+    	private boolean delete;
 
-		public ConversionTask(Path file) {
+		public ConversionTask(Path file, boolean delete) {
     		this.file = file;
+    		this.delete = delete;
     	}
     	
 		@Override
@@ -92,7 +94,9 @@ public class MCAConverter extends SimpleFileVisitor<Path> {
 	        	
 	        	Files.deleteIfExists(newPath);
 	        	Files.move(tempFile.toPath(), newPath);
-	        	Files.delete(file);
+	        	
+	        	if (delete)
+	        		Files.delete(file);
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, e.toString());
 			}
