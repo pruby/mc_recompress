@@ -18,15 +18,15 @@ Purpose
 
 Minecraft recompressor scans a directory for Minecraft Anvil Region (.mca) files and converts them in to a more compressible form. For various good reasons, .mca files aren't as small as they could be:
 
-* They already compress each individual chunk within the file, of which there can be up to 1024. As a general rule, compressing 1024 similar streams together once is much better than compressing them individually.
+* They compress each individual chunk within the file, of which there can be up to 1024. These don't compress again well as compressed data has high entropy.
 * Large blocks of data are contained within each section. Data with the same interpretation (light levels, material IDs, etc) is scattered through the chunk.
 * They may contain dead, unused space to pad chunks to 4096-byte boundaries.
 * They include cached computed data - height maps, light levels.
 
-All of these are necessary to simplify use in real-time within Minecraft, but add to the space these files take up. This utility compresses .mca files to its own format, .mci.gz . This format:
+All of these are necessary to simplify use in real-time within Minecraft, but add to the space these files take up. This utility compresses .mca files to its own "MRI" format, usually appearing as .mri.gz or .mri.bz2 . This format:
 
-* Is a single gzip-compressed NBT file, like many other Minecraft formats.
-* Contains all the same data as the .mca .
+* Is a single compressed NBT file, like many other Minecraft formats.
+* Contains the same data as the .mca .
 * Extracts a set of block data fields (Blocks, Add, Data, BlockLight, SkyLight) and groups them together so that the same type of data is together inside the compressed file.
 
-This is a form of lossy compression, as it re-compresses the .mca file differently. It will, however, contain the same data at the moment. In future options to remove reproducible data such as lighting calculations may be provided.
+This is a form of lossy compression, as it re-compresses the .mca file differently. You should run it on a COPY of your world, not the originals, and check that the reproduced world is identical. In future options to remove reproducible data such as lighting calculations may be provided.
