@@ -17,6 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import nz.net.goddard.mcrecompress.MCAConverter;
 import nz.net.goddard.mcrecompress.MCARegenerator;
@@ -27,6 +28,7 @@ public class MainWindow extends JFrame {
 	private List<String> logMessages;
 	private Logger logger = null;
 	private List<Component> actionControls;
+	private JTextField pathField;
 	
 	public MainWindow() {
 		super("MC Recompressor");
@@ -53,6 +55,11 @@ public class MainWindow extends JFrame {
 		logArea.setPreferredSize(new Dimension(600, 500));
 		
 		getContentPane().add(logArea, BorderLayout.NORTH);
+		
+		pathField = new JTextField();
+		Path defaultPath =  FileSystems.getDefault().getPath("");
+		pathField.setText(defaultPath.toAbsolutePath().toString());
+		getContentPane().add(pathField, BorderLayout.CENTER);
 		
 		// Buttons
 		JPanel actionButtons = new JPanel();
@@ -98,7 +105,7 @@ public class MainWindow extends JFrame {
 	private void convertMCAs() {
 		Runnable task = new Runnable() {
 			public void run() {
-				Path dir = FileSystems.getDefault().getPath(".");
+				Path dir = FileSystems.getDefault().getPath(pathField.getText());
 				MCAConverter converter = new MCAConverter(dir, 2);
 				try {
 					converter.convertMCAFiles();
@@ -127,7 +134,7 @@ public class MainWindow extends JFrame {
 	private void convertMRIs() {
 		Runnable task = new Runnable() {
 			public void run() {
-				Path dir = FileSystems.getDefault().getPath(".");
+				Path dir = FileSystems.getDefault().getPath(pathField.getText());
 				MCARegenerator regen = new MCARegenerator(dir, 2);
 				try {
 					regen.regenerateMCAFiles();
